@@ -187,7 +187,7 @@ spec:
     spec:
       containers:
         - name: kubernetes-dashboard
-          image: kubernetesui/dashboard:v2.0.0-rc2
+          image: kubernetesui/dashboard:v2.0.0
           imagePullPolicy: Always
           ports:
             - containerPort: 8443
@@ -199,7 +199,6 @@ spec:
             # If not specified, Dashboard will attempt to auto discover the API server and connect
             # to it. Uncomment only if the default does not work.
             # - --apiserver-host=http://my-address:port
-            - --enable-skip-login
           volumeMounts:
             - name: kubernetes-dashboard-certs
               mountPath: /certs
@@ -226,7 +225,7 @@ spec:
           emptyDir: {}
       serviceAccountName: kubernetes-dashboard
       nodeSelector:
-        "beta.kubernetes.io/os": linux
+        "kubernetes.io/os": linux
       # Comment the following tolerations if Dashboard must not be deployed on master
       tolerations:
         - key: node-role.kubernetes.io/master
@@ -272,7 +271,7 @@ spec:
     spec:
       containers:
         - name: dashboard-metrics-scraper
-          image: kubernetesui/metrics-scraper:v1.0.2
+          image: kubernetesui/metrics-scraper:v1.0.4
           ports:
             - containerPort: 8000
               protocol: TCP
@@ -293,7 +292,7 @@ spec:
             runAsGroup: 2001
       serviceAccountName: kubernetes-dashboard
       nodeSelector:
-        "beta.kubernetes.io/os": linux
+        "kubernetes.io/os": linux
       # Comment the following tolerations if Dashboard must not be deployed on master
       tolerations:
         - key: node-role.kubernetes.io/master
@@ -301,61 +300,3 @@ spec:
       volumes:
         - name: tmp-volume
           emptyDir: {}
-
----
-
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  labels:
-    app: dashboard
-  name: dashboard
-spec:
-  selector:
-    matchLabels:
-      app: dashboard
-  template:
-    metadata:
-      labels:
-        app: dashboard
-    spec:
-      containers:
-      - args:
-        - sh
-        - -c
-        - apk add --no-cache socat && socat TCP-LISTEN:80,fork,reuseaddr OPENSSL:kubernetes-dashboard.kubernetes-dashboard:443,verify=0
-        image: alpine
-        name: dashboard
-
----
-
-apiVersion: v1
-kind: Service
-metadata:
-  labels:
-    app: dashboard
-  name: dashboard
-spec:
-  ports:
-  - port: 80
-    protocol: TCP
-    targetPort: 80
-    nodePort: 30000
-  selector:
-    app: dashboard
-  type: NodePort
-
----
-
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: insecure-dashboard
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: cluster-admin
-subjects:
-- kind: ServiceAccount
-  name: kubernetes-dashboard
-  namespace: kubernetes-dashboard

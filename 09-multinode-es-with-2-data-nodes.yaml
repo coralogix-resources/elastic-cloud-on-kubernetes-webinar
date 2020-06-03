@@ -6,7 +6,7 @@ spec:
   version: 7.6.2
   nodeSets:
     - name: master-nodes
-      count: 1
+      count: 2
       config:
         node.master: true
         node.data: true
